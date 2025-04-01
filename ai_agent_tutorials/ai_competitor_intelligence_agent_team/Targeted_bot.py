@@ -10,11 +10,8 @@ from typing import List, Optional
 import json
 import os
 from dotenv import load_dotenv
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+
 
 load_dotenv()
 

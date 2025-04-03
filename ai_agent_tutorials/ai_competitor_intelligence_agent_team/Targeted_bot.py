@@ -220,53 +220,59 @@ if (
 
 
     def generate_comparison_report(competitor_data: list) -> None:
-        # Format the competitor data for the prompt
-        formatted_data = json.dumps(competitor_data, indent=2)
-        print(formatted_data)
+        try:
+            # Format the competitor data for the prompt
+            formatted_data = json.dumps(competitor_data, indent=2)
+            print("Formatted Data:", formatted_data)
 
-        # Updated system prompt for more structured output
-        system_prompt = f"""
-            As an expert business analyst, analyze the following data in JSON format and create a structured report.
-            Extract and summarize the key information into concise points. For multiple data sources chose the most relevant one and fill the table
+            # Updated system prompt with corrected JSON formatting
+            system_prompt = f"""
+                As an expert business analyst, analyze the following data in JSON format and create a structured report.
+                Extract and summarize the key information into concise points. Since all the websites refer to the same product, return a **single JSON object**.
 
-            {formatted_data}
+                {formatted_data}
 
-            Return the data in JSON format with exactly these keys:
-            [
+                Return the data in JSON format with exactly these keys:
                 {{
                     "Company": "Company Name (URL)",
                     "Pricing": "Pricing details",
-                    "Key Features": "Feature 1", "Feature 2", "Feature 3"
-                    "Tech Stack": "Tech 1", "Tech 2", "Tech 3"
+                    "Key Features": ["Feature 1", "Feature 2", "Feature 3"],
+                    "Tech Stack": ["Tech 1", "Tech 2", "Tech 3"],
                     "Marketing Focus": "Marketing focus summary",
                     "Customer Feedback": "Brief customer feedback summary"
-                }},
-                ...
-            ]
+                }}
 
-            Ensure all fields contain meaningful data. If information is missing, return "N/A" instead of leaving it empty. All the websites refer to the same Product, so just one row in the table.
-
-
-
-
+                Ensure all fields contain meaningful data. If information is missing, return "N/A" instead of leaving it empty.
+                Return **only the JSON object** without extra explanations or text.
             """
 
-        # Get comparison data from agent
-        comparison_response = comparison_agent.invoke(system_prompt)
-
-        try:
-            # Get comparison data from the agent
+            # Get comparison data from agent
             comparison_response = comparison_agent.invoke(system_prompt)
 
+            # Debugging: Check raw response before parsing
+            if not comparison_response or not comparison_response.content:
+                st.error("Error: Empty response from the comparison agent.")
+                return
+
+            print("Raw Response:", comparison_response.content)  # Debugging line
+
             # Convert model output to JSON format
-            comparison_data = json.loads(comparison_response.content)
+            try:
+                # Extract JSON block from response
+                json_text = comparison_response.content.strip("```json").strip("```").strip()
+                comparison_data = json.loads(json_text)
+            except json.JSONDecodeError:
+                st.error("Error: Model did not return valid JSON.")
+                st.write("Raw response:", comparison_response.content)  # Show raw output for debugging
+                return
 
             # Validate JSON structure
-            if not isinstance(comparison_data, list) or not all(isinstance(entry, dict) for entry in comparison_data):
-                raise ValueError("Invalid JSON format received from model.")
+            if not isinstance(comparison_data, dict):
+                st.error("Invalid JSON format received. Expected a JSON object.")
+                return
 
             # Convert JSON to DataFrame
-            df = pd.DataFrame(comparison_data)
+            df = pd.DataFrame([comparison_data])  # Wrap in a list to create DataFrame
 
             # Display the table
             st.subheader("Competitor Comparison")
@@ -274,7 +280,6 @@ if (
 
         except Exception as e:
             st.error(f"Error creating comparison table: {str(e)}")
-            st.write("Raw comparison data for debugging:", comparison_response.content)
 
         # try:
         #     # Split the response into lines and clean them

@@ -12,13 +12,12 @@ import os
 from dotenv import load_dotenv
 from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
 
-
 load_dotenv()
 
 if "groq_api_key" in st.session_state:
     os.environ["GROQ_API_KEY"] = st.session_state.groq_api_key
 # Streamlit UI
-st.set_page_config(page_title="Competitor Analysis Agent", layout="wide")
+st.set_page_config(page_title="Competitor Analysis Robot - CAR", layout="wide")
 
 # Sidebar for API keys
 st.sidebar.title("API Keys")
